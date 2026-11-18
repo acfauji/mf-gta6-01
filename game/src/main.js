@@ -97,7 +97,7 @@ function runGame() {
       world.step(STEP, 0, true);
       return;
     }
-    const events = world.step(STEP, input.direction(), false);
+    const events = world.step(STEP, input.direction(world.state.player.x + world.state.player.width / 2), false);
     if (events & EVENT_OVER) endGame();
     else if (events & EVENT_HIT) announce(world.state.lives === 1 ? 'Hit. 1 life left.' : `Hit. ${world.state.lives} lives left.`);
   }

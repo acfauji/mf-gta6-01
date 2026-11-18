@@ -1,6 +1,7 @@
-// Keyboard and pointer input. Held keys give a steering direction; one-shot presses (start or
-// restart, pause) are queued as bit flags and taken once by the loop, so a press between two
-// frames is never lost and never counted twice.
+// Keyboard and pointer input. Held keys or a held pointer give a steering direction; one-shot
+// presses (start or restart, pause) are queued as bit flags and taken once by the loop, so a press
+// between two frames is never lost and never counted twice.
+import { FIELD, PLAYER } from './config.js';
 
 export const ACTION_CONFIRM = 1;
 export const ACTION_PAUSE = 2;
@@ -14,6 +15,15 @@ export function createInput(target) {
   let left = false;
   let right = false;
   let actions = 0;
+  let pointerHeld = false;
+  let pointerX = 0;
+
+  function trackPointer(event) {
+    const rect = target.getBoundingClientRect();
+    const scale = Math.min(rect.width / FIELD.width, rect.height / FIELD.height);
+    const offset = (rect.width - FIELD.width * scale) / 2;
+    pointerX = Math.min(FIELD.width, Math.max(0, (event.clientX - rect.left - offset) / scale));
+  }
 
   window.addEventListener('keydown', (event) => {
     if (LEFT.has(event.code)) left = true;
@@ -33,15 +43,30 @@ export function createInput(target) {
   window.addEventListener('blur', () => {
     left = false;
     right = false;
+    pointerHeld = false;
   });
-  target.addEventListener('pointerdown', () => {
+  target.addEventListener('pointerdown', (event) => {
+    pointerHeld = true;
+    trackPointer(event);
     actions |= ACTION_CONFIRM;
+  });
+  target.addEventListener('pointermove', (event) => {
+    if (pointerHeld) trackPointer(event);
+  });
+  window.addEventListener('pointerup', () => {
+    pointerHeld = false;
+  });
+  window.addEventListener('pointercancel', () => {
+    pointerHeld = false;
   });
 
   return {
-    /** -1 for left, 1 for right, 0 for neither or both. */
-    direction() {
-      return (right ? 1 : 0) - (left ? 1 : 0);
+    /** -1 for left, 1 for right, 0 for neither or both; a held pointer steers toward its x. */
+    direction(playerCenter) {
+      const keys = (right ? 1 : 0) - (left ? 1 : 0);
+      if (keys !== 0 || !pointerHeld) return keys;
+      const delta = pointerX - playerCenter;
+      return Math.abs(delta) < PLAYER.width / 2 ? 0 : Math.sign(delta);
     },
     /** The one-shot presses since the last call, as ACTION_* flags. */
     takeActions() {

@@ -110,7 +110,7 @@ export function createRenderer(canvas) {
     text(prompt, FIELD.width / 2, y + height - 40, 24, PALETTE.coin, 'center');
   }
 
-  const TITLE_LINES = ['Dodge the red blocks. Catch the gold coins.', 'Move with ← → or A D.  Pause with P.', ''];
+  const TITLE_LINES = ['Dodge the red blocks. Catch the gold coins.', 'Move with ← →, A D or the pointer.  Pause with P.', ''];
   const PAUSED_LINES = ['The blocks will wait for you.'];
   const OVER_LINES = ['', ''];
 
