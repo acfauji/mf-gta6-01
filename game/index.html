@@ -3,17 +3,50 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
+<title>SUNBLAZE — Open City</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #7ec2df; font-family: system-ui, sans-serif; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+  .overlay { position: fixed; pointer-events: none; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.55); }
+  #hud { left: 20px; top: 16px; }
+  #brand { font-weight: 800; font-size: 22px; letter-spacing: 3px; color: #fff3cf; }
+  #brand span { color: #ff9b6a; }
+  #readout { display: flex; gap: 18px; align-items: baseline; margin-top: 6px; }
+  #mode { font-size: 12px; letter-spacing: 2px; font-weight: 700; color: #ffe0a3; }
+  #speed { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #hint { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); padding: 8px 16px; border-radius: 999px; background: rgba(17,24,30,.52); font-size: 13px; letter-spacing: .4px; white-space: nowrap; }
+  #mapFrame { position: fixed; right: 18px; top: 16px; width: 168px; height: 168px; border: 2px solid rgba(255,255,255,.7); border-radius: 8px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.35); pointer-events: none; }
+  #map { width: 100%; height: 100%; display: block; }
+  #mapLabel { position: absolute; left: 8px; bottom: 5px; font-size: 10px; letter-spacing: 2px; font-weight: 700; color: #ffe0a3; text-shadow: 0 1px 3px #000; }
+  #title { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(circle at 50% 45%, rgba(10,20,30,.1), rgba(8,14,20,.55)); transition: opacity .6s ease; pointer-events: none; }
+  #title.hidden, #paused.hidden { opacity: 0; visibility: hidden; }
+  #card { width: min(620px, 88vw); padding: 30px 34px; border-radius: 14px; background: rgba(20,28,34,.78); border: 1px solid rgba(255,224,163,.35); box-shadow: 0 20px 60px rgba(0,0,0,.45); text-align: center; }
+  #card h1 { margin: 0 0 4px; font-size: 54px; letter-spacing: 8px; color: #ffdc96; }
+  #card h1 b { color: #ff8c5a; }
+  #card p { margin: 8px 0; font-size: 14px; line-height: 1.6; color: #e8eef2; }
+  #card .keys { margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.18); font-size: 13px; color: #cfe0e8; }
+  #card .go { margin-top: 16px; font-weight: 800; letter-spacing: 2px; color: #ffd27a; }
+  #paused { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(10,16,22,.55); transition: opacity .25s ease; pointer-events: none; }
+  #paused div { font-size: 42px; font-weight: 800; letter-spacing: 8px; color: #ffe0a3; }
   #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
+<canvas id="game" aria-label="SUNBLAZE, a sunlit open city you can explore on foot and by car"></canvas>
+<div id="hud" class="overlay">
+  <div id="brand">SUN<span>BLAZE</span></div>
+  <div id="readout"><div id="mode">ON FOOT · 3RD</div><div id="speed">0 m</div></div>
+</div>
+<div id="mapFrame" class="overlay"><canvas id="map" width="164" height="164"></canvas><div id="mapLabel">CITY</div></div>
+<div id="hint" class="overlay">WASD move · Shift sprint · Space jump · V camera · F car · P pause</div>
+<div id="title" class="overlay"><div id="card">
+  <h1>SUN<b>BLAZE</b></h1>
+  <p>A bright, open city. Walk its streets, steal a ride, and follow the traffic.</p>
+  <p class="keys">WASD walk · mouse look · Shift sprint · Space jump · V camera<br>F enter or exit a car · W/S gas and brake · A/D steer · P pause</p>
+  <p class="go">CLICK TO LOOK AROUND AND DRIVE</p>
+</div></div>
+<div id="paused" class="overlay hidden"><div>PAUSED</div></div>
 <p id="status" role="status" aria-live="polite"></p>
-<script type="module" src="./src/main.js"></script>
+<script type="module" src="./main.js"></script>
 </body>
 </html>
