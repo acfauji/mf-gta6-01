@@ -4,12 +4,18 @@ import { createInput } from './input.js';
 import { createPlayer } from './player.js';
 import { createCar } from './vehicles.js';
 import { createTraffic } from './traffic.js';
+import { createPoliceForce } from './police.js';
+import { createMission } from './missions.js';
 
 const STEP = 1 / 60;
 const canvas = document.getElementById('game');
 const hudMode = document.getElementById('mode');
 const hudSpeed = document.getElementById('speed');
+const hudHealth = document.getElementById('health');
+const hudWanted = document.getElementById('wanted');
+const hudMission = document.getElementById('mission');
 const hudHint = document.getElementById('hint');
+const crosshair = document.getElementById('crosshair');
 const title = document.getElementById('title');
 const pausePanel = document.getElementById('paused');
 const status = document.getElementById('status');
@@ -30,6 +36,9 @@ const parked = spots.slice(0, 8).map((spot, i) => createCar(scene, city, {
   x: spot.x, z: spot.z, yaw: spot.yaw, color: CAR_COLORS[i % CAR_COLORS.length], controllable: true,
 }));
 const traffic = createTraffic(scene, city);
+const force = createPoliceForce(scene, city);
+const mission = createMission(scene);
+parked[0].owned = true;
 const allCars = parked.concat(traffic.cars);
 
 const view = { yaw: 0, pitch: -0.13, fov: 72 };
@@ -40,6 +49,9 @@ let paused = false;
 let introDone = false;
 let frames = 0;
 let shotFrames = 0;
+let shotCooldown = 0;
+let crosshairFlash = 0;
+let missionInfo = { stage: 'go', text: 'Go to the store', event: null, distance: 0 };
 
 const params = new URLSearchParams(window.location.search);
 const shot = params.get('shot');
@@ -116,7 +128,13 @@ function enterCar() {
   player.setActive(false);
   view.yaw = driving.yaw;
   view.pitch = -0.12;
-  status.textContent = 'Driving. W and S for gas and brake, A and D to steer.';
+  if (!driving.owned && !driving.stolen) {
+    driving.stolen = true;
+    force.setWanted(force.wanted + 1);
+    status.textContent = 'Car stolen! Police are on the way.';
+  } else {
+    status.textContent = 'Driving. W and S for gas and brake, A and D to steer.';
+  }
 }
 
 function exitCar() {
@@ -151,9 +169,16 @@ function handleActions() {
     if (driving) exitCar();
     else enterCar();
   }
+  if (!paused && input.fire() && shotCooldown <= 0) {
+    shotCooldown = 0.24;
+    crosshairFlash = 1;
+    const shooter = driving || player;
+    force.shoot(shooter.x, shooter.z, Math.sin(view.yaw), Math.cos(view.yaw));
+  }
 }
 
 function step(dt) {
+  if (shotCooldown > 0) shotCooldown = Math.max(0, shotCooldown - dt);
   if (driving) {
     const throttle = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
     const steer = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
@@ -162,6 +187,30 @@ function step(dt) {
     player.update(dt, input, view);
   }
   traffic.update(dt);
+
+  const target = driving || player;
+  const hits = traffic.hitPedestrians(target.x, target.z, driving ? 2.5 : player.radius + 0.3);
+  if (hits) force.setWanted(force.wanted + hits);
+
+  force.update(dt, target, allCars);
+  if (!driving && force.bumps(player.x, player.z, player.radius) && player.damage(1)) {
+    status.textContent = 'The cops hit you! Watch your health.';
+  }
+
+  missionInfo = mission.update(dt, target.x, target.z, force.wanted);
+  if (missionInfo.event === 'robbed') {
+    force.setWanted(3);
+    status.textContent = 'Store robbed! Lose the cops.';
+  } else if (missionInfo.event === 'complete') {
+    status.textContent = 'Mission complete. Nice work.';
+  }
+
+  if (player.health <= 0) {
+    player.revive();
+    player.place(startX, startZ, 0);
+    force.clear();
+    status.textContent = 'Busted! You got away with your life.';
+  }
 }
 
 function drawMap() {
@@ -193,6 +242,25 @@ function drawMap() {
     mapCtx.fillStyle = car === driving ? '#ffe07a' : '#8fd0e8';
     mapCtx.fillRect(car.x * scale - 1.5, car.z * scale - 1.5, 3, 3);
   }
+  for (let i = 0; i < force.cars.length; i++) {
+    const car = force.cars[i];
+    const mx = car.x * scale;
+    const mz = car.z * scale;
+    mapCtx.fillStyle = car.disabled ? '#6d7178' : (frames % 8 < 4 ? '#ff5b6e' : '#6aa8ff');
+    mapCtx.fillRect(mx - 2, mz - 2, 4, 4);
+  }
+  if (mission.stage === 'go' || mission.stage === 'rob') {
+    const mx = mission.store.x * scale;
+    const mz = mission.store.z * scale;
+    mapCtx.fillStyle = '#ffd23f';
+    mapCtx.beginPath();
+    mapCtx.moveTo(mx, mz - 6);
+    mapCtx.lineTo(mx + 5, mz);
+    mapCtx.lineTo(mx, mz + 6);
+    mapCtx.lineTo(mx - 5, mz);
+    mapCtx.closePath();
+    mapCtx.fill();
+  }
   if (!driving) {
     mapCtx.fillStyle = '#ff6f52';
     mapCtx.beginPath();
@@ -204,12 +272,19 @@ function drawMap() {
 function updateHud() {
   setText(hudMode, driving ? 'DRIVING' : (firstPerson ? 'ON FOOT · 1ST' : 'ON FOOT · 3RD'));
   setText(hudSpeed, driving ? `${Math.round(Math.abs(driving.speed) * 3.6)} km/h` : `${Math.round(Math.hypot(player.x - startX, player.z - startZ))} m`);
-  let hint = 'WASD move · Shift sprint · Space jump · V camera · F car · P pause';
-  if (driving) hint = 'W/S gas & brake · A/D steer · F exit · mouse look';
+  setText(hudHealth, '♥'.repeat(player.health) + '♡'.repeat(3 - player.health));
+  setText(hudWanted, '★'.repeat(force.wanted) + '☆'.repeat(5 - force.wanted));
+  hudWanted.classList.toggle('alert', force.wanted > 0);
+  const missionText = missionInfo.stage === 'go' ? `${missionInfo.text} · ${Math.round(missionInfo.distance)} m` : missionInfo.text;
+  setText(hudMission, `MISSION · ${missionText}`);
+  crosshair.classList.toggle('hot', crosshairFlash > 0);
+
+  let hint = 'WASD move · Shift sprint · Space jump · V camera · F car · Click shoot · P pause';
+  if (driving) hint = 'W/S gas & brake · A/D steer · F exit · click to shoot';
   else {
     for (let i = 0; i < parked.length; i++) {
       if (parked[i].distanceTo(player.x, player.z) < 4.4) {
-        hint = 'Press F to enter this car';
+        hint = 'Press F to enter this car · click to shoot';
         break;
       }
     }
@@ -250,6 +325,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const elapsed = Math.min(0.12, Math.max(0, (now - last) / 1000));
   last = now;
+  crosshairFlash = Math.max(0, crosshairFlash - elapsed * 5);
   applyLook();
   if (!paused) {
     accumulator += elapsed;

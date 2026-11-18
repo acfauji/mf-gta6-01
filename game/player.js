@@ -17,8 +17,10 @@ export function createPlayer(scene, city, startX, startZ) {
   const player = {
     x: startX, y: 0, z: startZ, vy: 0, yaw: 0, radius: 0.55,
     onGround: true, mesh, walking: false, phase: 0, active: true,
+    health: 3, maxHealth: 3, hitTimer: 0,
 
     update(dt, input, view) {
+      if (this.hitTimer > 0) this.hitTimer = Math.max(0, this.hitTimer - dt);
       let mx = 0, mz = 0;
       if (input.down('KeyW')) mz += 1;
       if (input.down('KeyS')) mz -= 1;
@@ -57,6 +59,19 @@ export function createPlayer(scene, city, startX, startZ) {
       mesh.z = this.z;
       mesh.y = this.y + (this.walking && this.onGround ? Math.abs(Math.sin(this.phase)) * 0.045 : 0);
       mesh.rotationY = this.yaw;
+      mesh.visible = this.active && (this.hitTimer <= 0 || Math.floor(this.hitTimer * 14) % 2 === 0);
+    },
+
+    damage(amount) {
+      if (this.hitTimer > 0 || this.health <= 0) return false;
+      this.health = Math.max(0, this.health - amount);
+      this.hitTimer = 0.9;
+      return true;
+    },
+
+    revive() {
+      this.health = this.maxHealth;
+      this.hitTimer = 0;
     },
 
     setActive(value) {

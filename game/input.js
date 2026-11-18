@@ -7,7 +7,7 @@ export function createInput(canvas) {
   const held = new Set();
   const pressed = new Set();
   let mouseX = 0, mouseY = 0;
-  let dragging = false, lastX = 0, lastY = 0, locked = false;
+  let dragging = false, lastX = 0, lastY = 0, locked = false, fired = false;
 
   window.addEventListener('keydown', (event) => {
     if (!held.has(event.code)) pressed.add(event.code);
@@ -23,6 +23,7 @@ export function createInput(canvas) {
     held.clear();
     pressed.clear();
     dragging = false;
+    fired = false;
   });
 
   document.addEventListener('pointerlockchange', () => {
@@ -30,6 +31,7 @@ export function createInput(canvas) {
   });
 
   canvas.addEventListener('pointerdown', (event) => {
+    if (event.button === 0) fired = true;
     dragging = true;
     lastX = event.clientX;
     lastY = event.clientY;
@@ -64,7 +66,12 @@ export function createInput(canvas) {
       mouseY = 0;
       return value;
     },
+    fire() {
+      const hit = fired;
+      fired = false;
+      return hit;
+    },
     get locked() { return locked; },
-    clearFrame() { pressed.clear(); },
+    clearFrame() { pressed.clear(); fired = false; },
   };
 }

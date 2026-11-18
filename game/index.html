@@ -14,6 +14,13 @@
   #readout { display: flex; gap: 18px; align-items: baseline; margin-top: 6px; }
   #mode { font-size: 12px; letter-spacing: 2px; font-weight: 700; color: #ffe0a3; }
   #speed { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #vitals { display: flex; gap: 18px; align-items: center; margin-top: 8px; }
+  #health { font-size: 20px; letter-spacing: 3px; color: #ff7575; }
+  #wanted { font-size: 19px; letter-spacing: 2px; color: #ffd166; }
+  #wanted.alert { color: #ff9257; text-shadow: 0 0 12px rgba(255,125,60,.8), 0 2px 6px rgba(0,0,0,.55); }
+  #mission { margin-top: 8px; font-size: 14px; font-weight: 800; letter-spacing: 1px; color: #ffe9a8; }
+  #crosshair { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 20px; font-weight: 700; color: rgba(255,255,255,.7); pointer-events: none; }
+  #crosshair.hot { color: #ff9b6a; }
   #hint { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); padding: 8px 16px; border-radius: 999px; background: rgba(17,24,30,.52); font-size: 13px; letter-spacing: .4px; white-space: nowrap; }
   #mapFrame { position: fixed; right: 18px; top: 16px; width: 168px; height: 168px; border: 2px solid rgba(255,255,255,.7); border-radius: 8px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.35); pointer-events: none; }
   #map { width: 100%; height: 100%; display: block; }
@@ -33,17 +40,20 @@
 </head>
 <body>
 <canvas id="game" aria-label="SUNBLAZE, a sunlit open city you can explore on foot and by car"></canvas>
+<div id="crosshair" class="overlay">+</div>
 <div id="hud" class="overlay">
   <div id="brand">SUN<span>BLAZE</span></div>
   <div id="readout"><div id="mode">ON FOOT · 3RD</div><div id="speed">0 m</div></div>
+  <div id="vitals"><div id="health">♥♥♥</div><div id="wanted">☆☆☆☆☆</div></div>
+  <div id="mission">MISSION · Go to the store</div>
 </div>
 <div id="mapFrame" class="overlay"><canvas id="map" width="164" height="164"></canvas><div id="mapLabel">CITY</div></div>
-<div id="hint" class="overlay">WASD move · Shift sprint · Space jump · V camera · F car · P pause</div>
+<div id="hint" class="overlay">WASD move · Shift sprint · Space jump · V camera · F car · Click shoot · P pause</div>
 <div id="title" class="overlay"><div id="card">
   <h1>SUN<b>BLAZE</b></h1>
-  <p>A bright, open city. Walk its streets, steal a ride, and follow the traffic.</p>
-  <p class="keys">WASD walk · mouse look · Shift sprint · Space jump · V camera<br>F enter or exit a car · W/S gas and brake · A/D steer · P pause</p>
-  <p class="go">CLICK TO LOOK AROUND AND DRIVE</p>
+  <p>A bright, open city. Rob the marked store, then lose the cops chasing you.</p>
+  <p class="keys">WASD walk · mouse look · Shift sprint · Space jump · V camera<br>F enter or exit a car · W/S gas and brake · A/D steer · click to shoot · P pause</p>
+  <p class="go">CLICK TO START THE JOB</p>
 </div></div>
 <div id="paused" class="overlay hidden"><div>PAUSED</div></div>
 <p id="status" role="status" aria-live="polite"></p>

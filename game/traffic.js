@@ -110,8 +110,22 @@ export function createTraffic(scene, city) {
       const throttle = blocked ? -0.55 : (car.speed < car.cruise ? 0.8 : 0.05);
       car.step({ throttle, steer }, dt, cars);
     }
-    for (let i = 0; i < pedestrians.length; i++) pedestrians[i].update(dt);
+    for (let i = 0; i < pedestrians.length; i++) {
+      if (!pedestrians[i].hit) pedestrians[i].update(dt);
+    }
   }
 
-  return { cars, pedestrians, update };
+  function hitPedestrians(x, z, radius) {
+    let hits = 0;
+    for (let i = 0; i < pedestrians.length; i++) {
+      const ped = pedestrians[i];
+      if (ped.hit || Math.hypot(ped.x - x, ped.z - z) >= radius) continue;
+      ped.hit = true;
+      ped.mesh.visible = false;
+      hits++;
+    }
+    return hits;
+  }
+
+  return { cars, pedestrians, update, hitPedestrians };
 }
