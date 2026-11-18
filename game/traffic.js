@@ -127,5 +127,12 @@ export function createTraffic(scene, city) {
     return hits;
   }
 
-  return { cars, pedestrians, update, hitPedestrians };
+  function reset() {
+    for (const ped of pedestrians) {
+      ped.hit = false;
+      ped.mesh.visible = true;
+    }
+  }
+
+  return { cars, pedestrians, update, hitPedestrians, reset };
 }

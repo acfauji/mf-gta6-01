@@ -39,6 +39,7 @@ export function createMission(scene) {
       if (near) {
         stage = 'rob';
         hold = 0;
+        event = 'arrived';
       }
     } else if (stage === 'rob') {
       if (near) {
@@ -66,8 +67,14 @@ export function createMission(scene) {
     else if (stage === 'escape') text = 'Lose the cops';
     else text = 'Mission complete';
 
-    return { stage, text, event, distance };
+    return { stage, text, event, distance, hold };
   }
 
-  return { store, radius: RADIUS, update, get stage() { return stage; } };
+  function reset() {
+    stage = 'go';
+    hold = 0;
+    marker.visible = true;
+  }
+
+  return { store, radius: RADIUS, update, reset, get stage() { return stage; } };
 }
